@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: classmate_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017/classmate
+      - JWT_SECRET=please_change_me
+      - JWT_EXPIRES_IN=1d
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo:6
+    container_name: classmate_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+volumes:
+  mongodata:

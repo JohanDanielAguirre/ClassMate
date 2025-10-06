@@ -1,0 +1,85 @@
+name: CI - Docker Compose Smoke Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke test with Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start services
+        run: |
+          docker compose version
+          docker compose up -d --build
+
+      - name: Wait for app to be ready
+        run: |
+          for i in {1..60}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ || true)
+            if [ "$code" = "200" ]; then
+              echo "App is up"
+              exit 0
+            fi
+            echo "Waiting for app... ($i)"
+            sleep 2
+          done
+          echo "App did not become ready in time"
+          docker compose logs app || true
+          exit 1
+
+      - name: Smoke test - Register user
+        run: |
+          USER="ghuser$RANDOM"
+          PASS="P@ssw0rd123"
+          ROLE="estudiante"
+          echo "USER=$USER" >> $GITHUB_ENV
+          echo "PASS=$PASS" >> $GITHUB_ENV
+          echo "ROLE=$ROLE" >> $GITHUB_ENV
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3000/register \
+            --data-urlencode "username=$USER" \
+            --data-urlencode "password=$PASS" \
+            --data-urlencode "confirmPassword=$PASS" \
+            --data-urlencode "role=$ROLE")
+          echo "Register status: $code"
+          if [ "$code" != "201" ] && [ "$code" != "409" ]; then
+            echo "Unexpected register status: $code"
+            exit 1
+          fi
+
+      - name: Smoke test - Login and get cookie
+        run: |
+          curl -i -c cookies.txt -X POST http://localhost:3000/login \
+            --data-urlencode "username=$USER" \
+            --data-urlencode "password=$PASS" | tee response.txt
+          grep -i "^Set-Cookie: token=" response.txt >/dev/null || (echo "No token cookie returned"; exit 1)
+
+      - name: Smoke test - Access dashboard
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -b cookies.txt http://localhost:3000/dashboard)
+          echo "Dashboard status: $code"
+          test "$code" = "200"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs app
+          docker compose logs mongo
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

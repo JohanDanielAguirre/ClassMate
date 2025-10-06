@@ -24,10 +24,27 @@
                     <label for="confirmPassword">Confirm Password:</label>
                     <input type="password" id="confirmPassword" name="confirmPassword" required>
                 </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <select id="role" name="role" required>
+                        <option value="estudiante">Estudiante</option>
+                        <option value="monitor">Monitor</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn">Register</button>
             </form>
             <p class="link-text">Already have an account? <a href="/" class="link">Login here</a></p>
         </div>
     </div>
+    <script>
+        (function(){
+            const params = new URLSearchParams(window.location.search);
+            const role = (params.get('role') || '').toLowerCase();
+            if (role === 'monitor' || role === 'estudiante') {
+                const sel = document.getElementById('role');
+                if (sel) sel.value = role;
+            }
+        })();
+    </script>
 </body>
 </html>
