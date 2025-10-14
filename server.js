@@ -323,31 +323,9 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
-// Protected example route
+// Protected dashboard route
 app.get('/dashboard', auth(true), (req, res) => {
-  const { username, role } = req.user || {};
-  res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Dashboard - ClassMate</title>
-            <link rel="stylesheet" href="/css/style.css">
-        </head>
-        <body>
-            <div class="container">
-                <div class="form-container">
-                    <h1>Dashboard</h1>
-                    <p>Hola <strong>${username}</strong>! Tu rol es <strong>${role}</strong>.</p>
-                    ${role === 'monitor' ? 
-                        '<div style="margin: 20px 0;"><p>Tienes acceso a herramientas de monitor.</p><a href="/offer-sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Ofrecer Sesiones</a><a href="/sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Gestionar Sesiones</a></div>' : 
-                        '<div style="margin: 20px 0;"><p>Bienvenido estudiante.</p><a href="/book-sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Reservar Sesiones</a><a href="/sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Mis Sesiones</a></div>'
-                    }
-                    <a href="/logout" class="link">Logout</a>
-                </div>
-            </div>
-        </body>
-        </html>
-    `);
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // Current user info (JSON)

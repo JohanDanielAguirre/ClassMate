@@ -6,31 +6,83 @@
     <title>Book Sessions - ClassMate</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
         .book-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
         .book-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: start;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #e9ecef;
         }
+        
+        .book-header h1 {
+            color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .book-header p {
+            color: #666;
+            margin: 5px 0 0 0;
+        }
         .search-section {
-            background: white;
-            padding: 20px;
+            background: #f8f9fa;
+            padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .search-section h3 {
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 20px 0;
         }
         .search-controls {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr auto;
             gap: 15px;
             align-items: end;
+        }
+        
+        .form-group label {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
         }
         .monitors-grid {
             display: grid;
@@ -50,6 +102,7 @@
         .monitor-card:hover {
             border-color: #007bff;
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         .monitor-card.selected {
             border-color: #007bff;
@@ -64,7 +117,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             display: flex;
             align-items: center;
@@ -76,20 +129,24 @@
         .monitor-info h3 {
             margin: 0 0 5px 0;
             color: #333;
+            font-size: 18px;
+            font-weight: 600;
         }
         .monitor-stats {
             color: #666;
             font-size: 0.9em;
+            font-weight: 500;
         }
         .sessions-list {
             margin-top: 20px;
         }
         .session-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
             border-left: 4px solid #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .session-header {
             display: flex;
@@ -98,13 +155,15 @@
             margin-bottom: 10px;
         }
         .session-title {
-            font-weight: bold;
+            font-weight: 600;
             color: #333;
+            font-size: 16px;
         }
         .session-meta {
             color: #666;
             font-size: 0.9em;
-            margin: 5px 0;
+            margin: 10px 0;
+            line-height: 1.5;
         }
         .session-actions {
             display: flex;
@@ -112,8 +171,13 @@
             margin-top: 10px;
         }
         .btn-small {
-            padding: 6px 12px;
+            padding: 8px 16px;
             font-size: 0.9em;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
         .btn-success {
             background: #28a745;
@@ -121,6 +185,7 @@
         }
         .btn-success:hover {
             background: #218838;
+            transform: translateY(-1px);
         }
         .btn-warning {
             background: #ffc107;
@@ -128,6 +193,7 @@
         }
         .btn-warning:hover {
             background: #e0a800;
+            transform: translateY(-1px);
         }
         .btn-info {
             background: #17a2b8;
@@ -135,6 +201,7 @@
         }
         .btn-info:hover {
             background: #138496;
+            transform: translateY(-1px);
         }
         .loading {
             text-align: center;
@@ -155,31 +222,41 @@
             margin-bottom: 20px;
         }
         .filter-tab {
-            padding: 8px 16px;
-            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border: 2px solid #007bff;
             background: white;
-            border-radius: 4px;
+            color: #007bff;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .filter-tab:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
         }
         .filter-tab.active {
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-color: #007bff;
+            border-color: transparent;
         }
         .error {
             background: #f8d7da;
             color: #721c24;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
         }
         .success {
             background: #d4edda;
             color: #155724;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
         }
         .selected-monitor {
             background: #e3f2fd;
@@ -187,6 +264,26 @@
             border-radius: 8px;
             margin-bottom: 20px;
             border-left: 4px solid #007bff;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
         }
     </style>
 </head>
@@ -198,7 +295,7 @@
                 <p>Find and book sessions with your preferred monitors</p>
             </div>
             <div>
-                <a href="/dashboard" class="btn" style="text-decoration: none;">Back to Dashboard</a>
+                <a href="/dashboard.html" class="btn">Back to Dashboard</a>
             </div>
         </div>
 
@@ -230,7 +327,9 @@
                     <label for="searchMonitor">Search Monitor</label>
                     <input type="text" id="searchMonitor" placeholder="Monitor name...">
                 </div>
-                <button class="btn" onclick="searchSessions()">Search</button>
+                <div class="form-group">
+                    <button class="btn" onclick="searchSessions()">Search</button>
+                </div>
             </div>
         </div>
 
