@@ -321,7 +321,7 @@
             </div>
             
             <div class="header-actions">
-                    <a href="/book-sessions.html" class="schedule-btn">Schedule Monitoring</a>
+                    <a href="#" id="actionBtn" class="schedule-btn">Loading...</a>
                     <div class="filter-buttons">
                         <button class="filter-btn active" data-filter="all">All</button>
                         <button class="filter-btn" data-filter="scheduled">Scheduled</button>
@@ -355,9 +355,21 @@
                 const response = await fetch('/me');
                 if (response.ok) {
                     currentUser = await response.json();
+                    updateActionButton();
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
+            }
+        }
+
+        function updateActionButton() {
+            const actionBtn = document.getElementById('actionBtn');
+            if (currentUser.role === 'monitor') {
+                actionBtn.textContent = 'Offer Monitoring';
+                actionBtn.href = '/offer-sessions.html';
+            } else if (currentUser.role === 'estudiante') {
+                actionBtn.textContent = 'Schedule Monitoring';
+                actionBtn.href = '/book-sessions.html';
             }
         }
 

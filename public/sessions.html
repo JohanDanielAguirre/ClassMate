@@ -6,17 +6,25 @@
     <title>Sessions - ClassMate</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
         .sessions-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
         .session-card {
-            background: white;
+            background: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
             margin: 15px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-left: 4px solid #007bff;
         }
         .session-card.completed {
@@ -138,13 +146,39 @@
         .form-group-full {
             grid-column: 1 / -1;
         }
+        
+        .form-group label {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
         .participants-list {
             max-height: 200px;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            background: #f8f9fa;
         }
         .participant-item {
             display: flex;
@@ -164,37 +198,108 @@
         .error {
             background: #f8d7da;
             color: #721c24;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
         }
         .success {
             background: #d4edda;
             color: #155724;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .template-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .template-card:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+            transform: translateY(-1px);
+        }
+        .template-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .template-desc {
+            font-size: 0.85em;
+            color: #666;
         }
         .header-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .header-actions h1 {
+            color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 28px;
+            font-weight: bold;
+            text-align: left;
+            margin: 0;
         }
         .filter-buttons {
             display: flex;
             gap: 10px;
         }
         .filter-btn {
-            padding: 8px 16px;
-            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border: 2px solid #007bff;
             background: white;
-            border-radius: 4px;
+            color: #007bff;
+            border-radius: 6px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .filter-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
         }
         .filter-btn.active {
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            border-color: transparent;
         }
     </style>
 </head>
@@ -203,8 +308,7 @@
         <div class="header-actions">
             <h1>Sessions Management</h1>
             <div>
-                <button id="createSessionBtn" class="btn" style="display: none;">Create New Session</button>
-                <a href="/dashboard" class="btn" style="text-decoration: none;">Back to Dashboard</a>
+                <a href="/dashboard.html" class="btn">Back to Dashboard</a>
             </div>
         </div>
 
@@ -278,10 +382,102 @@
         </div>
     </div>
 
+    <!-- Template Modal -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Session Templates</h2>
+            <p>Choose a template to quickly create a session:</p>
+            
+            <div class="template-grid">
+                <div class="template-card" onclick="useTemplate('math')">
+                    <div class="template-title">📐 Math Tutoring</div>
+                    <div class="template-desc">General math help session</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('physics')">
+                    <div class="template-title">⚛️ Physics Study</div>
+                    <div class="template-desc">Physics problem solving</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('chemistry')">
+                    <div class="template-title">🧪 Chemistry Lab</div>
+                    <div class="template-desc">Chemistry concepts and labs</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('programming')">
+                    <div class="template-title">💻 Programming Help</div>
+                    <div class="template-desc">Coding and programming support</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('exam')">
+                    <div class="template-title">📝 Exam Review</div>
+                    <div class="template-desc">Exam preparation session</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('general')">
+                    <div class="template-title">📚 General Study</div>
+                    <div class="template-desc">General academic support</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentUser = null;
         let sessions = [];
         let currentFilter = 'all';
+
+        // Session templates
+        const templates = {
+            math: {
+                title: 'Math Tutoring Session',
+                subject: 'Mathematics',
+                description: 'General math help and problem solving',
+                duration: 60,
+                room: 'Math Lab A',
+                maxParticipants: 15
+            },
+            physics: {
+                title: 'Physics Study Group',
+                subject: 'Physics',
+                description: 'Physics concepts and problem solving',
+                duration: 90,
+                room: 'Physics Lab B',
+                maxParticipants: 12
+            },
+            chemistry: {
+                title: 'Chemistry Lab Session',
+                subject: 'Chemistry',
+                description: 'Chemistry concepts and laboratory work',
+                duration: 120,
+                room: 'Chemistry Lab C',
+                maxParticipants: 10
+            },
+            programming: {
+                title: 'Programming Help Session',
+                subject: 'Computer Science',
+                description: 'Coding help and programming support',
+                duration: 90,
+                room: 'Computer Lab D',
+                maxParticipants: 20
+            },
+            exam: {
+                title: 'Exam Review Session',
+                subject: 'General',
+                description: 'Exam preparation and review',
+                duration: 120,
+                room: 'Study Hall E',
+                maxParticipants: 25
+            },
+            general: {
+                title: 'General Study Session',
+                subject: 'General',
+                description: 'General academic support and study help',
+                duration: 60,
+                room: 'Study Room F',
+                maxParticipants: 20
+            }
+        };
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', async function() {
@@ -437,15 +633,17 @@
                 });
             });
 
-            // Create session button
-            document.getElementById('createSessionBtn').addEventListener('click', function() {
-                openModal();
-            });
 
             // Modal close
-            document.querySelector('.close').addEventListener('click', closeModal);
-            document.getElementById('sessionModal').addEventListener('click', function(e) {
-                if (e.target === this) closeModal();
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', closeModal);
+            });
+
+            // Modal background click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closeModal();
+                });
             });
 
             // Form submission
@@ -482,7 +680,36 @@
         }
 
         function closeModal() {
-            document.getElementById('sessionModal').style.display = 'none';
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        function openTemplateModal() {
+            document.getElementById('templateModal').style.display = 'block';
+        }
+
+        function useTemplate(templateName) {
+            const template = templates[templateName];
+            if (!template) return;
+
+            // Populate the create form with template data
+            document.getElementById('title').value = template.title;
+            document.getElementById('subject').value = template.subject;
+            document.getElementById('description').value = template.description;
+            document.getElementById('duration').value = template.duration;
+            document.getElementById('room').value = template.room;
+            document.getElementById('maxParticipants').value = template.maxParticipants;
+
+            // Set default date to tomorrow at 2 PM
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+
+            // Close template modal and open create modal
+            closeModal();
+            document.getElementById('sessionModal').style.display = 'block';
         }
 
         async function handleFormSubmit(e) {
