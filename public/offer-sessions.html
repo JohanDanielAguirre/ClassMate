@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Sessions - ClassMate</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .offer-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .offer-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .action-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        .action-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        .action-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .action-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .action-description {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .recent-sessions {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .session-item:last-child {
+            border-bottom: none;
+        }
+        .session-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .session-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .session-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-scheduled { background: #e3f2fd; color: #1976d2; }
+        .status-active { background: #fff3e0; color: #f57c00; }
+        .status-completed { background: #e8f5e8; color: #388e3c; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        .form-group-full {
+            grid-column: 1 / -1;
+        }
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .template-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .template-card:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+        .template-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .template-desc {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="offer-container">
+        <div class="offer-header">
+            <div>
+                <h1>Offer Monitoring Sessions</h1>
+                <p>Create and manage your monitoring sessions for students</p>
+            </div>
+            <div>
+                <a href="/dashboard" class="btn" style="text-decoration: none;">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <div class="offer-stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalSessions">0</div>
+                <div class="stat-label">Total Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeSessions">0</div>
+                <div class="stat-label">Active Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalParticipants">0</div>
+                <div class="stat-label">Total Participants</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="upcomingSessions">0</div>
+                <div class="stat-label">Upcoming Sessions</div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="action-card" onclick="openCreateModal()">
+                <div class="action-icon">📅</div>
+                <div class="action-title">Create New Session</div>
+                <div class="action-description">Schedule a new monitoring session with custom details</div>
+                <button class="btn">Create Session</button>
+            </div>
+            
+            <div class="action-card" onclick="openTemplateModal()">
+                <div class="action-icon">📋</div>
+                <div class="action-title">Use Template</div>
+                <div class="action-description">Quickly create sessions using pre-defined templates</div>
+                <button class="btn">Use Template</button>
+            </div>
+            
+            <div class="action-card" onclick="window.location.href='/sessions'">
+                <div class="action-icon">⚙️</div>
+                <div class="action-title">Manage Sessions</div>
+                <div class="action-description">Edit, delete, and manage your existing sessions</div>
+                <button class="btn">Manage</button>
+            </div>
+        </div>
+
+        <div class="recent-sessions">
+            <h3>Recent Sessions</h3>
+            <div id="recentSessionsList">
+                <div class="loading">Loading recent sessions...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Session Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create New Session</h2>
+            <form id="createSessionForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject">
+                    </div>
+                </div>
+                
+                <div class="form-group form-group-full">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduledDate">Scheduled Date & Time *</label>
+                        <input type="datetime-local" id="scheduledDate" name="scheduledDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (minutes)</label>
+                        <input type="number" id="duration" name="duration" value="60" min="15" max="480">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="room">Room</label>
+                        <input type="text" id="room" name="room">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxParticipants">Max Participants</label>
+                        <input type="number" id="maxParticipants" name="maxParticipants" value="30" min="1" max="100">
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="2"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn">Create Session</button>
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Session Templates</h2>
+            <p>Choose a template to quickly create a session:</p>
+            
+            <div class="template-grid">
+                <div class="template-card" onclick="useTemplate('math')">
+                    <div class="template-title">📐 Math Tutoring</div>
+                    <div class="template-desc">General math help session</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('physics')">
+                    <div class="template-title">⚛️ Physics Study</div>
+                    <div class="template-desc">Physics problem solving</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('chemistry')">
+                    <div class="template-title">🧪 Chemistry Lab</div>
+                    <div class="template-desc">Chemistry concepts and labs</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('programming')">
+                    <div class="template-title">💻 Programming Help</div>
+                    <div class="template-desc">Coding and programming support</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('exam')">
+                    <div class="template-title">📝 Exam Review</div>
+                    <div class="template-desc">Exam preparation session</div>
+                </div>
+                <div class="template-card" onclick="useTemplate('general')">
+                    <div class="template-title">📚 General Study</div>
+                    <div class="template-desc">General academic support</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let sessions = [];
+
+        // Session templates
+        const templates = {
+            math: {
+                title: 'Math Tutoring Session',
+                subject: 'Mathematics',
+                description: 'General math help and problem solving',
+                duration: 60,
+                room: 'Math Lab A',
+                maxParticipants: 15
+            },
+            physics: {
+                title: 'Physics Study Group',
+                subject: 'Physics',
+                description: 'Physics concepts and problem solving',
+                duration: 90,
+                room: 'Physics Lab B',
+                maxParticipants: 12
+            },
+            chemistry: {
+                title: 'Chemistry Lab Session',
+                subject: 'Chemistry',
+                description: 'Chemistry concepts and laboratory work',
+                duration: 120,
+                room: 'Chemistry Lab C',
+                maxParticipants: 10
+            },
+            programming: {
+                title: 'Programming Help Session',
+                subject: 'Computer Science',
+                description: 'Coding help and programming support',
+                duration: 90,
+                room: 'Computer Lab D',
+                maxParticipants: 20
+            },
+            exam: {
+                title: 'Exam Review Session',
+                subject: 'General',
+                description: 'Exam preparation and review',
+                duration: 120,
+                room: 'Study Hall E',
+                maxParticipants: 25
+            },
+            general: {
+                title: 'General Study Session',
+                subject: 'General',
+                description: 'General academic support and study help',
+                duration: 60,
+                room: 'Study Room F',
+                maxParticipants: 20
+            }
+        };
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUserInfo();
+            await loadSessions();
+            setupEventListeners();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/me');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    if (currentUser.role !== 'monitor') {
+                        window.location.href = '/dashboard';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                if (response.ok) {
+                    sessions = await response.json();
+                    updateStats();
+                    displayRecentSessions();
+                } else {
+                    showError('Failed to load sessions');
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showError('Error loading sessions');
+            }
+        }
+
+        function updateStats() {
+            const totalSessions = sessions.length;
+            const activeSessions = sessions.filter(s => s.status === 'active').length;
+            const upcomingSessions = sessions.filter(s => s.status === 'scheduled').length;
+            const totalParticipants = sessions.reduce((sum, s) => sum + (s.participants?.length || 0), 0);
+
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('activeSessions').textContent = activeSessions;
+            document.getElementById('totalParticipants').textContent = totalParticipants;
+            document.getElementById('upcomingSessions').textContent = upcomingSessions;
+        }
+
+        function displayRecentSessions() {
+            const container = document.getElementById('recentSessionsList');
+            const recentSessions = sessions.slice(0, 5); // Show last 5 sessions
+            
+            if (recentSessions.length === 0) {
+                container.innerHTML = '<div class="loading">No sessions created yet.</div>';
+                return;
+            }
+
+            container.innerHTML = recentSessions.map(session => {
+                const scheduledDate = new Date(session.scheduledDate);
+                return `
+                    <div class="session-item">
+                        <div class="session-info">
+                            <h4>${session.title}</h4>
+                            <div class="session-meta">
+                                ${scheduledDate.toLocaleString()} • ${session.duration} min • ${session.participants?.length || 0}/${session.maxParticipants} participants
+                            </div>
+                        </div>
+                        <div class="session-status status-${session.status}">${session.status}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setupEventListeners() {
+            // Modal close
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', closeModal);
+            });
+
+            // Modal background click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closeModal();
+                });
+            });
+
+            // Form submission
+            document.getElementById('createSessionForm').addEventListener('submit', handleCreateSession);
+        }
+
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'block';
+            // Set default date to tomorrow at 2 PM
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+        }
+
+        function openTemplateModal() {
+            document.getElementById('templateModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        function useTemplate(templateName) {
+            const template = templates[templateName];
+            if (!template) return;
+
+            // Populate the create form with template data
+            document.getElementById('title').value = template.title;
+            document.getElementById('subject').value = template.subject;
+            document.getElementById('description').value = template.description;
+            document.getElementById('duration').value = template.duration;
+            document.getElementById('room').value = template.room;
+            document.getElementById('maxParticipants').value = template.maxParticipants;
+
+            // Set default date to tomorrow at 2 PM
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+
+            // Close template modal and open create modal
+            closeModal();
+            document.getElementById('createModal').style.display = 'block';
+        }
+
+        async function handleCreateSession(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const sessionData = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(sessionData)
+                });
+                
+                if (response.ok) {
+                    showSuccess('Session created successfully!');
+                    closeModal();
+                    e.target.reset();
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to create session');
+                }
+            } catch (error) {
+                console.error('Error creating session:', error);
+                showError('Error creating session');
+            }
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.offer-container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.querySelector('.offer-container');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            container.insertBefore(successDiv, container.firstChild);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

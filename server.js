@@ -48,6 +48,49 @@ userSchema.methods.toSafeJSON = function () {
 
 const User = mongoose.model('User', userSchema);
 
+// Monitoring Session schema/model
+const monitoringSessionSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    monitorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    scheduledDate: { type: Date, required: true },
+    duration: { type: Number, required: true, default: 60 }, // duration in minutes
+    status: {
+      type: String,
+      enum: ['scheduled', 'active', 'completed', 'cancelled'],
+      default: 'scheduled'
+    },
+    participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    maxParticipants: { type: Number, default: 30 },
+    room: { type: String, trim: true },
+    subject: { type: String, trim: true },
+    notes: { type: String, trim: true }
+  },
+  { timestamps: true }
+);
+
+monitoringSessionSchema.methods.toSafeJSON = function () {
+  return {
+    id: this._id,
+    title: this.title,
+    description: this.description,
+    monitorId: this.monitorId,
+    scheduledDate: this.scheduledDate,
+    duration: this.duration,
+    status: this.status,
+    participants: this.participants,
+    maxParticipants: this.maxParticipants,
+    room: this.room,
+    subject: this.subject,
+    notes: this.notes,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt
+  };
+};
+
+const MonitoringSession = mongoose.model('MonitoringSession', monitoringSessionSchema);
+
 // Auth middleware
 function auth(required = true) {
   return (req, res, next) => {
@@ -73,6 +116,18 @@ app.get('/', (req, res) => {
 
 app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
+app.get('/sessions', auth(true), (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sessions.html'));
+});
+
+app.get('/offer-sessions', auth(true), (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'offer-sessions.html'));
+});
+
+app.get('/book-sessions', auth(true), (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'book-sessions.html'));
 });
 
 // API: Register
@@ -283,7 +338,10 @@ app.get('/dashboard', auth(true), (req, res) => {
                 <div class="form-container">
                     <h1>Dashboard</h1>
                     <p>Hola <strong>${username}</strong>! Tu rol es <strong>${role}</strong>.</p>
-                    ${role === 'monitor' ? '<p>Tienes acceso a herramientas de monitor.</p>' : '<p>Bienvenido estudiante.</p>'}
+                    ${role === 'monitor' ? 
+                        '<div style="margin: 20px 0;"><p>Tienes acceso a herramientas de monitor.</p><a href="/offer-sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Ofrecer Sesiones</a><a href="/sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Gestionar Sesiones</a></div>' : 
+                        '<div style="margin: 20px 0;"><p>Bienvenido estudiante.</p><a href="/book-sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Reservar Sesiones</a><a href="/sessions" class="btn" style="text-decoration:none; display:inline-block; margin: 5px;">Mis Sesiones</a></div>'
+                    }
                     <a href="/logout" class="link">Logout</a>
                 </div>
             </div>
@@ -302,6 +360,345 @@ app.get('/me', auth(true), async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Monitoring Session Routes
+
+// Get all monitoring sessions (for monitors) or sessions user is participating in
+app.get('/api/sessions', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    let sessions;
+    if (user.role === 'monitor') {
+      // Monitors can see all their sessions
+      sessions = await MonitoringSession.find({ monitorId: req.user.id })
+        .populate('participants', 'username')
+        .sort({ scheduledDate: 1 });
+    } else {
+      // Students can see sessions they're participating in
+      sessions = await MonitoringSession.find({ 
+        participants: req.user.id,
+        status: { $in: ['scheduled', 'active'] }
+      })
+        .populate('monitorId', 'username')
+        .populate('participants', 'username')
+        .sort({ scheduledDate: 1 });
+    }
+
+    res.json(sessions.map(session => session.toSafeJSON()));
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create a new monitoring session (monitors only)
+app.post('/api/sessions', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'monitor') {
+      return res.status(403).json({ error: 'Only monitors can create sessions' });
+    }
+
+    const {
+      title,
+      description,
+      scheduledDate,
+      duration,
+      maxParticipants,
+      room,
+      subject,
+      notes
+    } = req.body;
+
+    if (!title || !scheduledDate) {
+      return res.status(400).json({ error: 'Title and scheduled date are required' });
+    }
+
+    const session = await MonitoringSession.create({
+      title,
+      description,
+      monitorId: req.user.id,
+      scheduledDate: new Date(scheduledDate),
+      duration: duration || 60,
+      maxParticipants: maxParticipants || 30,
+      room,
+      subject,
+      notes
+    });
+
+    await session.populate('monitorId', 'username');
+    res.status(201).json(session.toSafeJSON());
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get a specific monitoring session
+app.get('/api/sessions/:id', auth(true), async (req, res) => {
+  try {
+    const session = await MonitoringSession.findById(req.params.id)
+      .populate('monitorId', 'username')
+      .populate('participants', 'username');
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (user.role !== 'monitor' && !session.participants.includes(req.user.id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json(session.toSafeJSON());
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update a monitoring session (monitors only)
+app.put('/api/sessions/:id', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'monitor') {
+      return res.status(403).json({ error: 'Only monitors can update sessions' });
+    }
+
+    const session = await MonitoringSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.monitorId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'You can only update your own sessions' });
+    }
+
+    const updates = req.body;
+    if (updates.scheduledDate) {
+      updates.scheduledDate = new Date(updates.scheduledDate);
+    }
+
+    const updatedSession = await MonitoringSession.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).populate('monitorId', 'username').populate('participants', 'username');
+
+    res.json(updatedSession.toSafeJSON());
+  } catch (error) {
+    console.error('Error updating session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Join a monitoring session (students only)
+app.post('/api/sessions/:id/join', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'estudiante') {
+      return res.status(403).json({ error: 'Only students can join sessions' });
+    }
+
+    const session = await MonitoringSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.status !== 'scheduled') {
+      return res.status(400).json({ error: 'Cannot join session that is not scheduled' });
+    }
+
+    if (session.participants.includes(req.user.id)) {
+      return res.status(400).json({ error: 'Already joined this session' });
+    }
+
+    if (session.participants.length >= session.maxParticipants) {
+      return res.status(400).json({ error: 'Session is full' });
+    }
+
+    session.participants.push(req.user.id);
+    await session.save();
+
+    await session.populate('monitorId', 'username');
+    await session.populate('participants', 'username');
+
+    res.json(session.toSafeJSON());
+  } catch (error) {
+    console.error('Error joining session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Leave a monitoring session
+app.post('/api/sessions/:id/leave', auth(true), async (req, res) => {
+  try {
+    const session = await MonitoringSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (!session.participants.includes(req.user.id)) {
+      return res.status(400).json({ error: 'Not participating in this session' });
+    }
+
+    session.participants = session.participants.filter(
+      participantId => participantId.toString() !== req.user.id
+    );
+    await session.save();
+
+    await session.populate('monitorId', 'username');
+    await session.populate('participants', 'username');
+
+    res.json(session.toSafeJSON());
+  } catch (error) {
+    console.error('Error leaving session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a monitoring session (monitors only)
+app.delete('/api/sessions/:id', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'monitor') {
+      return res.status(403).json({ error: 'Only monitors can delete sessions' });
+    }
+
+    const session = await MonitoringSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.monitorId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'You can only delete your own sessions' });
+    }
+
+    await MonitoringSession.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get available sessions for students to join
+app.get('/api/sessions/available', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'estudiante') {
+      return res.status(403).json({ error: 'Only students can view available sessions' });
+    }
+
+    const sessions = await MonitoringSession.find({
+      status: 'scheduled',
+      scheduledDate: { $gte: new Date() }, // Only future sessions
+      $expr: { $lt: [{ $size: '$participants' }, '$maxParticipants'] } // Not full
+    })
+      .populate('monitorId', 'username')
+      .populate('participants', 'username')
+      .sort({ scheduledDate: 1 });
+
+    res.json(sessions.map(session => session.toSafeJSON()));
+  } catch (error) {
+    console.error('Error fetching available sessions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get all monitors (for students to browse)
+app.get('/api/monitors', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'estudiante') {
+      return res.status(403).json({ error: 'Only students can view monitors' });
+    }
+
+    const monitors = await User.find({ role: 'monitor' })
+      .select('username _id')
+      .sort({ username: 1 });
+
+    res.json(monitors);
+  } catch (error) {
+    console.error('Error fetching monitors:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get sessions by specific monitor
+app.get('/api/monitors/:monitorId/sessions', auth(true), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'estudiante') {
+      return res.status(403).json({ error: 'Only students can view monitor sessions' });
+    }
+
+    const { monitorId } = req.params;
+    const monitor = await User.findById(monitorId);
+    
+    if (!monitor || monitor.role !== 'monitor') {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+
+    const sessions = await MonitoringSession.find({
+      monitorId: monitorId,
+      status: 'scheduled',
+      scheduledDate: { $gte: new Date() }, // Only future sessions
+      $expr: { $lt: [{ $size: '$participants' }, '$maxParticipants'] } // Not full
+    })
+      .populate('monitorId', 'username')
+      .populate('participants', 'username')
+      .sort({ scheduledDate: 1 });
+
+    res.json({
+      monitor: { id: monitor._id, username: monitor.username },
+      sessions: sessions.map(session => session.toSafeJSON())
+    });
+  } catch (error) {
+    console.error('Error fetching monitor sessions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Session status management
+async function updateSessionStatuses() {
+  try {
+    const now = new Date();
+    
+    // Update sessions that should be active
+    await MonitoringSession.updateMany(
+      {
+        status: 'scheduled',
+        scheduledDate: { $lte: now }
+      },
+      { status: 'active' }
+    );
+    
+    // Update sessions that should be completed
+    await MonitoringSession.updateMany(
+      {
+        status: 'active',
+        $expr: {
+          $lte: [
+            { $add: ['$scheduledDate', { $multiply: ['$duration', 60000] }] },
+            now
+          ]
+        }
+      },
+      { status: 'completed' }
+    );
+  } catch (error) {
+    console.error('Error updating session statuses:', error);
+  }
+}
+
+// Update session statuses every minute
+setInterval(updateSessionStatuses, 60000);
+
+// Initial status update
+updateSessionStatuses();
 
 // Start server
 app.listen(PORT, () => {

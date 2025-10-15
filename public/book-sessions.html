@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Sessions - ClassMate</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .book-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .book-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .search-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+        .monitors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .monitor-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .monitor-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        .monitor-card.selected {
+            border-color: #007bff;
+            background: #f8f9ff;
+        }
+        .monitor-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .monitor-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .monitor-info h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .monitor-stats {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .sessions-list {
+            margin-top: 20px;
+        }
+        .session-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .session-title {
+            font-weight: bold;
+            color: #333;
+        }
+        .session-meta {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #138496;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-sessions {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filter-tab.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .selected-monitor {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="book-container">
+        <div class="book-header">
+            <div>
+                <h1>Book Monitoring Sessions</h1>
+                <p>Find and book sessions with your preferred monitors</p>
+            </div>
+            <div>
+                <a href="/dashboard" class="btn" style="text-decoration: none;">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <h3>Search & Filter</h3>
+            <div class="search-controls">
+                <div class="form-group">
+                    <label for="subjectFilter">Subject</label>
+                    <select id="subjectFilter">
+                        <option value="">All Subjects</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dateFilter">Date Range</label>
+                    <select id="dateFilter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="tomorrow">Tomorrow</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="searchMonitor">Search Monitor</label>
+                    <input type="text" id="searchMonitor" placeholder="Monitor name...">
+                </div>
+                <button class="btn" onclick="searchSessions()">Search</button>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="all">All Monitors</div>
+            <div class="filter-tab" data-filter="available">Available Now</div>
+            <div class="filter-tab" data-filter="popular">Most Popular</div>
+        </div>
+
+        <div id="monitorsList">
+            <div class="loading">Loading monitors...</div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let monitors = [];
+        let allSessions = [];
+        let currentFilter = 'all';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUserInfo();
+            await loadMonitors();
+            await loadAllSessions();
+            setupEventListeners();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/me');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    if (currentUser.role !== 'estudiante') {
+                        window.location.href = '/dashboard';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        async function loadMonitors() {
+            try {
+                const response = await fetch('/api/monitors');
+                if (response.ok) {
+                    monitors = await response.json();
+                    displayMonitors();
+                } else {
+                    showError('Failed to load monitors');
+                }
+            } catch (error) {
+                console.error('Error loading monitors:', error);
+                showError('Error loading monitors');
+            }
+        }
+
+        async function loadAllSessions() {
+            try {
+                const response = await fetch('/api/sessions/available');
+                if (response.ok) {
+                    allSessions = await response.json();
+                } else {
+                    console.error('Failed to load sessions');
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        function displayMonitors() {
+            const container = document.getElementById('monitorsList');
+            
+            if (monitors.length === 0) {
+                container.innerHTML = '<div class="no-sessions">No monitors available.</div>';
+                return;
+            }
+
+            container.innerHTML = monitors.map(monitor => {
+                const monitorSessions = allSessions.filter(session => session.monitorId.id === monitor.id);
+                const availableSessions = monitorSessions.filter(session => 
+                    session.participants.length < session.maxParticipants
+                );
+                
+                return createMonitorCard(monitor, availableSessions);
+            }).join('');
+        }
+
+        function createMonitorCard(monitor, sessions) {
+            const initials = monitor.username.split(' ').map(n => n[0]).join('').toUpperCase();
+            const hasAvailableSessions = sessions.length > 0;
+            
+            return `
+                <div class="monitor-card" onclick="toggleMonitorCard(this, '${monitor.id}')">
+                    <div class="monitor-header">
+                        <div class="monitor-avatar">${initials}</div>
+                        <div class="monitor-info">
+                            <h3>${monitor.username}</h3>
+                            <div class="monitor-stats">
+                                ${sessions.length} available session${sessions.length !== 1 ? 's' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${hasAvailableSessions ? `
+                    <div class="sessions-list" id="sessions-${monitor.id}" style="display: none;">
+                        ${sessions.map(session => createSessionItem(session)).join('')}
+                    </div>
+                    ` : `
+                    <div class="no-sessions">
+                        <p>No available sessions at the moment</p>
+                    </div>
+                    `}
+                </div>
+            `;
+        }
+
+        function createSessionItem(session) {
+            const scheduledDate = new Date(session.scheduledDate);
+            const endDate = new Date(scheduledDate.getTime() + session.duration * 60000);
+            const isParticipant = session.participants.some(p => p.id === currentUser.id);
+            
+            return `
+                <div class="session-item">
+                    <div class="session-header">
+                        <div class="session-title">${session.title}</div>
+                        <div style="color: #666; font-size: 0.9em;">
+                            ${session.participants.length}/${session.maxParticipants} participants
+                        </div>
+                    </div>
+                    <div class="session-meta">
+                        <strong>📅 Date:</strong> ${scheduledDate.toLocaleDateString()}<br>
+                        <strong>⏰ Time:</strong> ${scheduledDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}<br>
+                        <strong>⏱️ Duration:</strong> ${session.duration} minutes<br>
+                        ${session.room ? `<strong>🏫 Room:</strong> ${session.room}<br>` : ''}
+                        ${session.subject ? `<strong>📖 Subject:</strong> ${session.subject}<br>` : ''}
+                    </div>
+                    ${session.description ? `<p style="margin: 10px 0; color: #666;">${session.description}</p>` : ''}
+                    
+                    <div class="session-actions">
+                        ${isParticipant ? 
+                            `<button class="btn btn-small btn-warning" onclick="leaveSession('${session.id}')">Leave Session</button>` :
+                            session.participants.length < session.maxParticipants ?
+                                `<button class="btn btn-small btn-success" onclick="joinSession('${session.id}')">Join Session</button>` :
+                                `<span style="color: #666; font-size: 0.9em;">Session is full</span>`
+                        }
+                        <button class="btn btn-small btn-info" onclick="viewSessionDetails('${session.id}')">Details</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleMonitorCard(card, monitorId) {
+            const sessionsDiv = document.getElementById(`sessions-${monitorId}`);
+            if (sessionsDiv) {
+                const isVisible = sessionsDiv.style.display !== 'none';
+                sessionsDiv.style.display = isVisible ? 'none' : 'block';
+                
+                // Toggle card selection
+                card.classList.toggle('selected');
+            }
+        }
+
+        function setupEventListeners() {
+            // Filter tabs
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    applyFilters();
+                });
+            });
+
+            // Search functionality
+            document.getElementById('searchMonitor').addEventListener('input', debounce(searchSessions, 300));
+            document.getElementById('subjectFilter').addEventListener('change', searchSessions);
+            document.getElementById('dateFilter').addEventListener('change', searchSessions);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function searchSessions() {
+            const searchTerm = document.getElementById('searchMonitor').value.toLowerCase();
+            const subjectFilter = document.getElementById('subjectFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            // Filter monitors based on search criteria
+            const filteredMonitors = monitors.filter(monitor => {
+                const matchesSearch = monitor.username.toLowerCase().includes(searchTerm);
+                return matchesSearch;
+            });
+            
+            // Filter sessions based on criteria
+            const filteredSessions = allSessions.filter(session => {
+                const matchesSubject = !subjectFilter || session.subject === subjectFilter;
+                const matchesDate = matchesDateFilter(session.scheduledDate, dateFilter);
+                return matchesSubject && matchesDate;
+            });
+            
+            // Update display
+            displayFilteredResults(filteredMonitors, filteredSessions);
+        }
+
+        function matchesDateFilter(sessionDate, filter) {
+            const date = new Date(sessionDate);
+            const now = new Date();
+            
+            switch (filter) {
+                case 'today':
+                    return date.toDateString() === now.toDateString();
+                case 'tomorrow':
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return date.toDateString() === tomorrow.toDateString();
+                case 'week':
+                    const weekFromNow = new Date(now);
+                    weekFromNow.setDate(weekFromNow.getDate() + 7);
+                    return date >= now && date <= weekFromNow;
+                case 'month':
+                    const monthFromNow = new Date(now);
+                    monthFromNow.setMonth(monthFromNow.getMonth() + 1);
+                    return date >= now && date <= monthFromNow;
+                default:
+                    return true;
+            }
+        }
+
+        function displayFilteredResults(filteredMonitors, filteredSessions) {
+            const container = document.getElementById('monitorsList');
+            
+            if (filteredMonitors.length === 0) {
+                container.innerHTML = '<div class="no-sessions">No monitors found matching your criteria.</div>';
+                return;
+            }
+
+            container.innerHTML = filteredMonitors.map(monitor => {
+                const monitorSessions = filteredSessions.filter(session => session.monitorId.id === monitor.id);
+                const availableSessions = monitorSessions.filter(session => 
+                    session.participants.length < session.maxParticipants
+                );
+                
+                return createMonitorCard(monitor, availableSessions);
+            }).join('');
+        }
+
+        function applyFilters() {
+            // This would implement additional filtering logic based on currentFilter
+            // For now, just refresh the display
+            displayMonitors();
+        }
+
+        async function joinSession(sessionId) {
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}/join`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Successfully joined the session!');
+                    await loadAllSessions();
+                    displayMonitors();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to join session');
+                }
+            } catch (error) {
+                console.error('Error joining session:', error);
+                showError('Error joining session');
+            }
+        }
+
+        async function leaveSession(sessionId) {
+            if (!confirm('Are you sure you want to leave this session?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}/leave`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Successfully left the session!');
+                    await loadAllSessions();
+                    displayMonitors();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to leave session');
+                }
+            } catch (error) {
+                console.error('Error leaving session:', error);
+                showError('Error leaving session');
+            }
+        }
+
+        function viewSessionDetails(sessionId) {
+            // This could open a modal with detailed session information
+            alert('Session details feature coming soon!');
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.book-container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.querySelector('.book-container');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            container.insertBefore(successDiv, container.firstChild);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
