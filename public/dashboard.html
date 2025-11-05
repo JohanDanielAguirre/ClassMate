@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ClassMate</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .card-title {
+            color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .filter-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .schedule-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 14px;
+        }
+        
+        .schedule-btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .session-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+        }
+        
+        .session-card.completed {
+            border-left-color: #28a745;
+        }
+        
+        .session-card.cancelled {
+            border-left-color: #dc3545;
+        }
+        
+        .session-card.active {
+            border-left-color: #ffc107;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .session-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .session-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-scheduled { background: #e3f2fd; color: #1976d2; }
+        .status-active { background: #fff3e0; color: #f57c00; }
+        .status-completed { background: #e8f5e8; color: #388e3c; }
+        .status-cancelled { background: #ffebee; color: #d32f2f; }
+        
+        .session-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .no-sessions {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .participants-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .participant-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .filter-buttons {
+                justify-content: center;
+            }
+            
+            .schedule-btn {
+                align-self: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="main-card">
+            <div class="card-header">
+                <h1 class="card-title">My Sessions</h1>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+            
+            <div class="header-actions">
+                    <a href="#" id="actionBtn" class="schedule-btn">Loading...</a>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="scheduled">Scheduled</button>
+                        <button class="filter-btn" data-filter="active">Active</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                        <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sessionsList">
+                <div class="loading">Loading sessions...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let sessions = [];
+        let currentFilter = 'all';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUserInfo();
+            await loadSessions();
+            setupEventListeners();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/me');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    updateActionButton();
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        function updateActionButton() {
+            const actionBtn = document.getElementById('actionBtn');
+            if (currentUser.role === 'monitor') {
+                actionBtn.textContent = 'Offer Monitoring';
+                actionBtn.href = '/offer-sessions.html';
+            } else if (currentUser.role === 'estudiante') {
+                actionBtn.textContent = 'Schedule Monitoring';
+                actionBtn.href = '/book-sessions.html';
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                if (response.ok) {
+                    sessions = await response.json();
+                    displaySessions();
+                } else {
+                    showError('Failed to load sessions');
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showError('Error loading sessions');
+            }
+        }
+
+        function displaySessions() {
+            const container = document.getElementById('sessionsList');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="no-sessions">No sessions found.</div>';
+                return;
+            }
+
+            const filteredSessions = currentFilter === 'all' 
+                ? sessions 
+                : sessions.filter(session => session.status === currentFilter);
+
+            if (filteredSessions.length === 0) {
+                container.innerHTML = '<div class="no-sessions">No sessions found for the selected filter.</div>';
+                return;
+            }
+
+            container.innerHTML = filteredSessions.map(session => createSessionCard(session)).join('');
+        }
+
+        function createSessionCard(session) {
+            const scheduledDate = new Date(session.scheduledDate);
+            const endDate = new Date(scheduledDate.getTime() + session.duration * 60000);
+            
+            return `
+                <div class="session-card ${session.status}">
+                    <div class="session-header">
+                        <div class="session-title">${session.title}</div>
+                        <div class="session-status status-${session.status}">${session.status}</div>
+                    </div>
+                    
+                    <div class="session-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Monitor</div>
+                            <div class="detail-value">${session.monitorId?.username || 'Unknown'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Date & Time</div>
+                            <div class="detail-value">${scheduledDate.toLocaleString()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Duration</div>
+                            <div class="detail-value">${session.duration} minutes</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">End Time</div>
+                            <div class="detail-value">${endDate.toLocaleString()}</div>
+                        </div>
+                        ${session.room ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Room</div>
+                            <div class="detail-value">${session.room}</div>
+                        </div>
+                        ` : ''}
+                        ${session.subject ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Subject</div>
+                            <div class="detail-value">${session.subject}</div>
+                        </div>
+                        ` : ''}
+                        <div class="detail-item">
+                            <div class="detail-label">Participants</div>
+                            <div class="detail-value">${session.participants?.length || 0}/${session.maxParticipants}</div>
+                        </div>
+                    </div>
+
+                    ${session.description ? `<p><strong>Description:</strong> ${session.description}</p>` : ''}
+                    ${session.notes ? `<p><strong>Notes:</strong> ${session.notes}</p>` : ''}
+
+                    ${session.participants && session.participants.length > 0 ? `
+                    <div class="participants-list">
+                        <strong>Participants:</strong>
+                        ${session.participants.map(p => `
+                            <div class="participant-item">
+                                <span>${p.username}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+
+                    <div class="session-actions">
+                        ${getSessionActions(session)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getSessionActions(session) {
+            const actions = [];
+            
+            if (currentUser.role === 'monitor') {
+                if (session.status === 'scheduled') {
+                    actions.push(`<button class="btn-small btn-primary" onclick="editSession('${session.id}')">Edit</button>`);
+                    actions.push(`<button class="btn-small btn-danger" onclick="deleteSession('${session.id}')">Delete</button>`);
+                }
+            } else if (currentUser.role === 'estudiante') {
+                const isParticipant = session.participants?.some(p => p.id === currentUser.id);
+                
+                if (session.status === 'scheduled') {
+                    if (isParticipant) {
+                        actions.push(`<button class="btn-small btn-warning" onclick="leaveSession('${session.id}')">Leave</button>`);
+                    } else if (session.participants?.length < session.maxParticipants) {
+                        actions.push(`<button class="btn-small btn-success" onclick="joinSession('${session.id}')">Join</button>`);
+                    } else {
+                        actions.push(`<span style="color: #666;">Session is full</span>`);
+                    }
+                }
+            }
+            
+            return actions.join('');
+        }
+
+        function setupEventListeners() {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    displaySessions();
+                });
+            });
+        }
+
+        async function editSession(sessionId) {
+            // Redirect to sessions page for editing
+            window.location.href = '/sessions.html';
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to delete this session?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Session deleted successfully!');
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to delete session');
+                }
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                showError('Error deleting session');
+            }
+        }
+
+        async function joinSession(sessionId) {
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}/join`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Successfully joined the session!');
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to join session');
+                }
+            } catch (error) {
+                console.error('Error joining session:', error);
+                showError('Error joining session');
+            }
+        }
+
+        async function leaveSession(sessionId) {
+            if (!confirm('Are you sure you want to leave this session?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}/leave`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Successfully left the session!');
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to leave session');
+                }
+            } catch (error) {
+                console.error('Error leaving session:', error);
+                showError('Error leaving session');
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('sessionsList');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.getElementById('sessionsList');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            container.insertBefore(successDiv, container.firstChild);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
