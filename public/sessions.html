@@ -276,6 +276,12 @@
             text-align: left;
             margin: 0;
         }
+        .header-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
         .filter-buttons {
             display: flex;
             gap: 10px;
@@ -307,7 +313,9 @@
     <div class="sessions-container">
         <div class="header-actions">
             <h1>Sessions Management</h1>
-            <div>
+            <div class="header-buttons">
+                <button id="createSessionBtn" class="btn" style="display: none;">Create Session</button>
+                <button id="openTemplateBtn" class="btn" style="display: none;">Use Template</button>
                 <a href="/dashboard.html" class="btn">Back to Dashboard</a>
             </div>
         </div>
@@ -491,8 +499,14 @@
                 const response = await fetch('/me');
                 if (response.ok) {
                     currentUser = await response.json();
+                    const createBtn = document.getElementById('createSessionBtn');
+                    const templateBtn = document.getElementById('openTemplateBtn');
                     if (currentUser.role === 'monitor') {
-                        document.getElementById('createSessionBtn').style.display = 'inline-block';
+                        if (createBtn) createBtn.style.display = 'inline-block';
+                        if (templateBtn) templateBtn.style.display = 'inline-block';
+                    } else {
+                        if (createBtn) createBtn.style.display = 'none';
+                        if (templateBtn) templateBtn.style.display = 'none';
                     }
                 }
             } catch (error) {
@@ -632,6 +646,16 @@
                     displaySessions();
                 });
             });
+
+            const createBtn = document.getElementById('createSessionBtn');
+            if (createBtn) {
+                createBtn.addEventListener('click', () => openModal());
+            }
+
+            const templateBtn = document.getElementById('openTemplateBtn');
+            if (templateBtn) {
+                templateBtn.addEventListener('click', openTemplateModal);
+            }
 
 
             // Modal close

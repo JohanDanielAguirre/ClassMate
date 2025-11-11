@@ -11,7 +11,8 @@
         <div class="form-container">
             <h1>ClassMate</h1>
             <h2>Register</h2>
-            <form action="/register" method="POST">
+            <div id="registerMsg" class="error" style="display:none; margin-bottom:12px;"></div>
+            <form id="registerForm" action="/register" method="POST">
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required>
@@ -44,6 +45,51 @@
                 const sel = document.getElementById('role');
                 if (sel) sel.value = role;
             }
+
+            const form = document.getElementById('registerForm');
+            const msg = document.getElementById('registerMsg');
+
+            function show(type, text){
+                if (!msg) return;
+                msg.textContent = text;
+                msg.style.display = 'block';
+                msg.className = type === 'success' ? 'success' : 'error';
+            }
+
+            form?.addEventListener('submit', async function(e){
+                e.preventDefault();
+                msg.style.display = 'none';
+
+                const formData = new FormData(form);
+                const payload = Object.fromEntries(formData.entries());
+
+                if (payload.password !== payload.confirmPassword) {
+                    show('error', 'Passwords do not match.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        credentials: 'same-origin'
+                    });
+                    if (res.ok) {
+                        show('success', 'Registration successful! Redirecting to login...');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 800);
+                    } else {
+                        const text = await res.text();
+                        const match = /error-message">([^<]+)/i.exec(text) || /Username already exists/i.exec(text);
+                        show('error', match ? (match[1] || match[0]) : 'Registration failed.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    show('error', 'Network error. Please try again.');
+                }
+            });
         })();
     </script>
 </body>

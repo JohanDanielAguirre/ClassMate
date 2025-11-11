@@ -11,7 +11,8 @@
         <div class="form-container">
             <h1>ClassMate</h1>
             <h2>Login</h2>
-            <form action="/login" method="POST">
+            <div id="loginMsg" class="error" style="display:none; margin-bottom:12px;"></div>
+            <form id="loginForm" action="/login" method="POST">
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required>
@@ -32,5 +33,40 @@
             </div>
         </div>
     </div>
+    <script>
+        (function(){
+            const form = document.getElementById('loginForm');
+            const msg = document.getElementById('loginMsg');
+            function showError(text){
+                if (!msg) return;
+                msg.textContent = text || 'Login failed. Please try again.';
+                msg.style.display = 'block';
+                msg.className = 'error';
+            }
+            form?.addEventListener('submit', async function(e){
+                e.preventDefault();
+                msg.style.display = 'none';
+                const formData = new FormData(form);
+                const payload = Object.fromEntries(formData.entries());
+                try {
+                    const res = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        credentials: 'same-origin'
+                    });
+                    if (res.ok) {
+                        window.location.href = '/dashboard';
+                    } else {
+                        const text = await res.text();
+                        showError(/error-message">([^<]+)/i.test(text) ? RegExp.$1 : 'Invalid username or password.');
+                    }
+                } catch (err) {
+                    showError('Network error. Please try again.');
+                    console.error(err);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

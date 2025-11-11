@@ -285,6 +285,37 @@
             text-decoration: none;
             color: white;
         }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -341,6 +372,16 @@
 
         <div id="monitorsList">
             <div class="loading">Loading monitors...</div>
+        </div>
+    </div>
+
+    <!-- Session Details Modal -->
+    <div id="sessionDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="sessionDetailsClose">&times;</span>
+            <div id="sessionDetailsBody">
+                <!-- Filled dynamically -->
+            </div>
         </div>
     </div>
 
@@ -637,8 +678,130 @@
         }
 
         function viewSessionDetails(sessionId) {
-            // This could open a modal with detailed session information
-            alert('Session details feature coming soon!');
+            const session = allSessions.find(s => s.id === sessionId);
+            if (!session) {
+                showError('Session not found');
+                return;
+            }
+            openSessionDetailsModal(session);
+        }
+
+        function openSessionDetailsModal(session) {
+            const modal = document.getElementById('sessionDetailsModal');
+            const body = document.getElementById('sessionDetailsBody');
+            const scheduledDate = new Date(session.scheduledDate);
+            const endDate = new Date(scheduledDate.getTime() + session.duration * 60000);
+            const isParticipant = session.participants.some(p => p.id === currentUser.id);
+            const isFull = session.participants.length >= session.maxParticipants;
+
+            const actions = [];
+            if (session.status === 'scheduled') {
+                if (isParticipant) {
+                    actions.push(`<button class="btn btn-small btn-warning" id="detailsLeaveBtn">Leave</button>`);
+                } else if (!isFull) {
+                    actions.push(`<button class="btn btn-small btn-success" id="detailsJoinBtn">Join</button>`);
+                } else {
+                    actions.push(`<span style="color:#666;">Session is full</span>`);
+                }
+            } else {
+                actions.push(`<span style="color:#666;">No actions available</span>`);
+            }
+
+            body.innerHTML = `
+                <h2 style="margin-top:0;">${session.title}</h2>
+                <div class="session-meta">
+                    <strong>Monitor:</strong> ${session.monitorId?.username || 'Unknown'}<br>
+                    <strong>Subject:</strong> ${session.subject || '—'}<br>
+                    <strong>Room:</strong> ${session.room || '—'}<br>
+                </div>
+                <div class="session-meta" style="margin-top:10px;">
+                    <strong>Date:</strong> ${scheduledDate.toLocaleDateString()}<br>
+                    <strong>Time:</strong> ${scheduledDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}<br>
+                    <strong>Duration:</strong> ${session.duration} minutes<br>
+                    <strong>Status:</strong> ${session.status}<br>
+                    <strong>Capacity:</strong> ${session.participants.length}/${session.maxParticipants}
+                </div>
+                ${session.description ? `<p style="margin-top:10px;"><strong>Description:</strong> ${session.description}</p>` : ''}
+                ${session.notes ? `<p><strong>Notes:</strong> ${session.notes}</p>` : ''}
+                <div class="participants-list">
+                    <strong>Participants:</strong>
+                    ${session.participants.length ? session.participants.map(p => `
+                        <div class="participant-item">
+                            <span>${p.username}</span>
+                        </div>
+                    `).join('') : '<div style="color:#666; margin-top:6px;">No participants yet</div>'}
+                </div>
+                <div class="session-actions" style="margin-top:12px;">
+                    ${actions.join('')}
+                </div>
+            `;
+
+            const joinBtn = document.getElementById('detailsJoinBtn');
+            if (joinBtn) {
+                joinBtn.addEventListener('click', async () => {
+                    const ok = await safeJoin(session.id);
+                    if (ok) {
+                        await loadAllSessions();
+                        displayMonitors();
+                        closeSessionDetailsModal();
+                        showSuccess('Successfully joined the session!');
+                    }
+                });
+            }
+            const leaveBtn = document.getElementById('detailsLeaveBtn');
+            if (leaveBtn) {
+                leaveBtn.addEventListener('click', async () => {
+                    const ok = await safeLeave(session.id);
+                    if (ok) {
+                        await loadAllSessions();
+                        displayMonitors();
+                        closeSessionDetailsModal();
+                        showSuccess('Successfully left the session!');
+                    }
+                });
+            }
+
+            modal.style.display = 'block';
+            document.getElementById('sessionDetailsClose').onclick = closeSessionDetailsModal;
+            modal.onclick = function(e) { if (e.target === modal) closeSessionDetailsModal(); };
+        }
+
+        function closeSessionDetailsModal() {
+            const modal = document.getElementById('sessionDetailsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function safeJoin(sessionId) {
+            try {
+                const res = await fetch(`/api/sessions/${sessionId}/join`, { method: 'POST' });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    showError(err.error || 'Failed to join session');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error(e);
+                showError('Error joining session');
+                return false;
+            }
+        }
+
+        async function safeLeave(sessionId) {
+            if (!confirm('Are you sure you want to leave this session?')) return false;
+            try {
+                const res = await fetch(`/api/sessions/${sessionId}/leave`, { method: 'POST' });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    showError(err.error || 'Failed to leave session');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error(e);
+                showError('Error leaving session');
+                return false;
+            }
         }
 
         function showError(message) {
