@@ -124,6 +124,34 @@
         .session-item:last-child {
             border-bottom: none;
         }
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
         .session-info h4 {
             margin: 0 0 5px 0;
             color: #333;
@@ -309,11 +337,11 @@
         </div>
 
         <div class="quick-actions">
-            <div class="action-card" onclick="openCreateModal()">
+            <div class="action-card" onclick="openCreateModal(null)">
                 <div class="action-icon">📅</div>
                 <div class="action-title">Create New Session</div>
                 <div class="action-description">Schedule a new monitoring session with custom details</div>
-                <button class="btn">Create Session</button>
+                <button class="btn" onclick="event.stopPropagation(); openCreateModal(null);">Create Session</button>
             </div>
             
             <div class="action-card" onclick="openTemplateModal()">
@@ -339,11 +367,11 @@
         </div>
     </div>
 
-    <!-- Create Session Modal -->
+    <!-- Create/Edit Session Modal -->
     <div id="createModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Create New Session</h2>
+            <h2 id="modalTitle">Create New Session</h2>
             <form id="createSessionForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -353,6 +381,20 @@
                     <div class="form-group">
                         <label for="subject">Subject</label>
                         <input type="text" id="subject" name="subject">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sessionType">Session Type *</label>
+                        <select id="sessionType" name="sessionType" required onchange="handleSessionTypeChange()">
+                            <option value="group">Group Session</option>
+                            <option value="personal">Personal Session</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxParticipants">Max Participants</label>
+                        <input type="number" id="maxParticipants" name="maxParticipants" value="30" min="1" max="100">
                     </div>
                 </div>
                 
@@ -377,10 +419,6 @@
                         <label for="room">Room</label>
                         <input type="text" id="room" name="room">
                     </div>
-                    <div class="form-group">
-                        <label for="maxParticipants">Max Participants</label>
-                        <input type="number" id="maxParticipants" name="maxParticipants" value="30" min="1" max="100">
-                    </div>
                 </div>
 
                 <div class="form-group form-group-full">
@@ -389,7 +427,7 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn">Create Session</button>
+                    <button type="submit" class="btn" id="submitBtn">Create Session</button>
                     <button type="button" class="btn" onclick="closeModal()">Cancel</button>
                 </div>
             </form>
@@ -439,6 +477,7 @@
     <script>
         let currentUser = null;
         let sessions = [];
+        let editingSessionId = null;
 
         // Session templates
         const templates = {
@@ -552,13 +591,20 @@
 
             container.innerHTML = recentSessions.map(session => {
                 const scheduledDate = new Date(session.scheduledDate);
+                const sessionTypeLabel = session.sessionType === 'personal' ? 'Personal' : 'Group';
                 return `
                     <div class="session-item">
                         <div class="session-info">
-                            <h4>${session.title}</h4>
+                            <h4>${session.title} <span style="font-size: 0.8em; color: #666;">(${sessionTypeLabel})</span></h4>
                             <div class="session-meta">
                                 ${scheduledDate.toLocaleString()} • ${session.duration} min • ${session.participants?.length || 0}/${session.maxParticipants} participants
                             </div>
+                            ${session.status === 'scheduled' ? `
+                            <div class="session-actions">
+                                <button class="btn-small btn-primary" onclick="editSession('${session.id}')">Edit</button>
+                                <button class="btn-small btn-danger" onclick="deleteSession('${session.id}')">Delete</button>
+                            </div>
+                            ` : ''}
                         </div>
                         <div class="session-status status-${session.status}">${session.status}</div>
                     </div>
@@ -581,15 +627,69 @@
 
             // Form submission
             document.getElementById('createSessionForm').addEventListener('submit', handleCreateSession);
+            
+            // Initialize session type handler
+            handleSessionTypeChange();
         }
 
-        function openCreateModal() {
-            document.getElementById('createModal').style.display = 'block';
-            // Set default date to tomorrow at 2 PM
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(14, 0, 0, 0);
-            document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+        function handleSessionTypeChange() {
+            const sessionType = document.getElementById('sessionType').value;
+            const maxParticipantsInput = document.getElementById('maxParticipants');
+            
+            if (sessionType === 'personal') {
+                maxParticipantsInput.value = 1;
+                maxParticipantsInput.disabled = true;
+            } else {
+                maxParticipantsInput.disabled = false;
+                if (maxParticipantsInput.value === '1') {
+                    maxParticipantsInput.value = 30;
+                }
+            }
+        }
+
+        function openCreateModal(session = null) {
+            const modal = document.getElementById('createModal');
+            const form = document.getElementById('createSessionForm');
+            const title = document.getElementById('modalTitle');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            editingSessionId = null;
+            
+            if (session) {
+                title.textContent = 'Edit Session';
+                submitBtn.textContent = 'Update Session';
+                editingSessionId = session.id;
+                
+                // Populate form with session data
+                document.getElementById('title').value = session.title;
+                document.getElementById('description').value = session.description || '';
+                document.getElementById('subject').value = session.subject || '';
+                document.getElementById('sessionType').value = session.sessionType || 'group';
+                document.getElementById('scheduledDate').value = new Date(session.scheduledDate).toISOString().slice(0, 16);
+                document.getElementById('duration').value = session.duration;
+                document.getElementById('room').value = session.room || '';
+                document.getElementById('maxParticipants').value = session.maxParticipants;
+                document.getElementById('notes').value = session.notes || '';
+                
+                handleSessionTypeChange();
+            } else {
+                title.textContent = 'Create New Session';
+                submitBtn.textContent = 'Create Session';
+                form.reset();
+                document.getElementById('duration').value = 60;
+                document.getElementById('maxParticipants').value = 30;
+                document.getElementById('sessionType').value = 'group';
+                
+                // Set default date to tomorrow at 2 PM
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(14, 0, 0, 0);
+                document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+                
+                handleSessionTypeChange();
+            }
+            
+            modal.style.display = 'block';
         }
 
         function openTemplateModal() {
@@ -613,12 +713,15 @@
             document.getElementById('duration').value = template.duration;
             document.getElementById('room').value = template.room;
             document.getElementById('maxParticipants').value = template.maxParticipants;
+            document.getElementById('sessionType').value = 'group';
 
             // Set default date to tomorrow at 2 PM
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(14, 0, 0, 0);
             document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+
+            handleSessionTypeChange();
 
             // Close template modal and open create modal
             closeModal();
@@ -631,9 +734,20 @@
             const formData = new FormData(e.target);
             const sessionData = Object.fromEntries(formData.entries());
             
+            // Convert maxParticipants to number
+            if (sessionData.maxParticipants) {
+                sessionData.maxParticipants = parseInt(sessionData.maxParticipants);
+            }
+            if (sessionData.duration) {
+                sessionData.duration = parseInt(sessionData.duration);
+            }
+            
             try {
-                const response = await fetch('/api/sessions', {
-                    method: 'POST',
+                const url = editingSessionId ? `/api/sessions/${editingSessionId}` : '/api/sessions';
+                const method = editingSessionId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -641,17 +755,48 @@
                 });
                 
                 if (response.ok) {
-                    showSuccess('Session created successfully!');
+                    showSuccess(editingSessionId ? 'Session updated successfully!' : 'Session created successfully!');
                     closeModal();
                     e.target.reset();
+                    editingSessionId = null;
                     await loadSessions();
                 } else {
                     const error = await response.json();
-                    showError(error.error || 'Failed to create session');
+                    showError(error.error || (editingSessionId ? 'Failed to update session' : 'Failed to create session'));
                 }
             } catch (error) {
-                console.error('Error creating session:', error);
-                showError('Error creating session');
+                console.error('Error saving session:', error);
+                showError(editingSessionId ? 'Error updating session' : 'Error creating session');
+            }
+        }
+
+        function editSession(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (session) {
+                openCreateModal(session);
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to delete this session?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showSuccess('Session deleted successfully!');
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to delete session');
+                }
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                showError('Error deleting session');
             }
         }
 

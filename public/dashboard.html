@@ -448,6 +448,12 @@
                             <div class="detail-value">${session.subject}</div>
                         </div>
                         ` : ''}
+                        ${session.sessionType ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Type</div>
+                            <div class="detail-value">${session.sessionType === 'personal' ? 'Personal' : 'Group'}</div>
+                        </div>
+                        ` : ''}
                         <div class="detail-item">
                             <div class="detail-label">Participants</div>
                             <div class="detail-value">${session.participants?.length || 0}/${session.maxParticipants}</div>
@@ -513,8 +519,8 @@
         }
 
         async function editSession(sessionId) {
-            // Redirect to sessions page for editing
-            window.location.href = '/sessions.html';
+            // Redirect to sessions page for editing with session ID
+            window.location.href = `/sessions.html?edit=${sessionId}`;
         }
 
         async function deleteSession(sessionId) {

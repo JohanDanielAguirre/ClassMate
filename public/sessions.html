@@ -349,6 +349,20 @@
                         <input type="text" id="subject" name="subject">
                     </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sessionType">Session Type *</label>
+                        <select id="sessionType" name="sessionType" required onchange="handleSessionTypeChange()">
+                            <option value="group">Group Session</option>
+                            <option value="personal">Personal Session</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxParticipants">Max Participants</label>
+                        <input type="number" id="maxParticipants" name="maxParticipants" value="30" min="1" max="100">
+                    </div>
+                </div>
                 
                 <div class="form-group form-group-full">
                     <label for="description">Description</label>
@@ -370,10 +384,6 @@
                     <div class="form-group">
                         <label for="room">Room</label>
                         <input type="text" id="room" name="room">
-                    </div>
-                    <div class="form-group">
-                        <label for="maxParticipants">Max Participants</label>
-                        <input type="number" id="maxParticipants" name="maxParticipants" value="30" min="1" max="100">
                     </div>
                 </div>
 
@@ -492,6 +502,19 @@
             await loadUserInfo();
             await loadSessions();
             setupEventListeners();
+            
+            // Check if there's a session ID in the URL for editing
+            const urlParams = new URLSearchParams(window.location.search);
+            const editSessionId = urlParams.get('edit');
+            if (editSessionId && currentUser && currentUser.role === 'monitor') {
+                // Wait for sessions to be loaded, then open edit modal
+                const session = sessions.find(s => s.id === editSessionId);
+                if (session) {
+                    openModal(session);
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, '/sessions.html');
+                }
+            }
         });
 
         async function loadUserInfo() {
@@ -547,11 +570,12 @@
         function createSessionCard(session) {
             const scheduledDate = new Date(session.scheduledDate);
             const endDate = new Date(scheduledDate.getTime() + session.duration * 60000);
+            const sessionTypeLabel = session.sessionType === 'personal' ? 'Personal' : 'Group';
             
             return `
                 <div class="session-card ${session.status}">
                     <div class="session-header">
-                        <div class="session-title">${session.title}</div>
+                        <div class="session-title">${session.title} <span style="font-size: 0.8em; color: #666;">(${sessionTypeLabel})</span></div>
                         <div class="session-status status-${session.status}">${session.status}</div>
                     </div>
                     
@@ -672,6 +696,24 @@
 
             // Form submission
             document.getElementById('sessionForm').addEventListener('submit', handleFormSubmit);
+            
+            // Initialize session type handler
+            handleSessionTypeChange();
+        }
+
+        function handleSessionTypeChange() {
+            const sessionType = document.getElementById('sessionType').value;
+            const maxParticipantsInput = document.getElementById('maxParticipants');
+            
+            if (sessionType === 'personal') {
+                maxParticipantsInput.value = 1;
+                maxParticipantsInput.disabled = true;
+            } else {
+                maxParticipantsInput.disabled = false;
+                if (maxParticipantsInput.value === '1') {
+                    maxParticipantsInput.value = 30;
+                }
+            }
         }
 
         function openModal(session = null) {
@@ -687,17 +729,22 @@
                 document.getElementById('title').value = session.title;
                 document.getElementById('description').value = session.description || '';
                 document.getElementById('subject').value = session.subject || '';
+                document.getElementById('sessionType').value = session.sessionType || 'group';
                 document.getElementById('scheduledDate').value = new Date(session.scheduledDate).toISOString().slice(0, 16);
                 document.getElementById('duration').value = session.duration;
                 document.getElementById('room').value = session.room || '';
                 document.getElementById('maxParticipants').value = session.maxParticipants;
                 document.getElementById('notes').value = session.notes || '';
+                
+                handleSessionTypeChange();
             } else {
                 title.textContent = 'Create New Session';
                 form.dataset.sessionId = '';
                 form.reset();
                 document.getElementById('duration').value = 60;
                 document.getElementById('maxParticipants').value = 30;
+                document.getElementById('sessionType').value = 'group';
+                handleSessionTypeChange();
             }
             
             modal.style.display = 'block';
@@ -724,12 +771,15 @@
             document.getElementById('duration').value = template.duration;
             document.getElementById('room').value = template.room;
             document.getElementById('maxParticipants').value = template.maxParticipants;
+            document.getElementById('sessionType').value = 'group';
 
             // Set default date to tomorrow at 2 PM
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(14, 0, 0, 0);
             document.getElementById('scheduledDate').value = tomorrow.toISOString().slice(0, 16);
+
+            handleSessionTypeChange();
 
             // Close template modal and open create modal
             closeModal();
@@ -742,6 +792,14 @@
             const formData = new FormData(e.target);
             const sessionData = Object.fromEntries(formData.entries());
             const sessionId = e.target.dataset.sessionId;
+            
+            // Convert maxParticipants to number
+            if (sessionData.maxParticipants) {
+                sessionData.maxParticipants = parseInt(sessionData.maxParticipants);
+            }
+            if (sessionData.duration) {
+                sessionData.duration = parseInt(sessionData.duration);
+            }
             
             try {
                 const url = sessionId ? `/api/sessions/${sessionId}` : '/api/sessions';

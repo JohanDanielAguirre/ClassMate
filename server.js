@@ -61,6 +61,11 @@ const monitoringSessionSchema = new mongoose.Schema(
       enum: ['scheduled', 'active', 'completed', 'cancelled'],
       default: 'scheduled'
     },
+    sessionType: {
+      type: String,
+      enum: ['personal', 'group'],
+      default: 'group'
+    },
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     maxParticipants: { type: Number, default: 30 },
     room: { type: String, trim: true },
@@ -79,6 +84,7 @@ monitoringSessionSchema.methods.toSafeJSON = function () {
     scheduledDate: this.scheduledDate,
     duration: this.duration,
     status: this.status,
+    sessionType: this.sessionType,
     participants: this.participants,
     maxParticipants: this.maxParticipants,
     room: this.room,
@@ -387,12 +393,17 @@ app.post('/api/sessions', auth(true), async (req, res) => {
       maxParticipants,
       room,
       subject,
-      notes
+      notes,
+      sessionType
     } = req.body;
 
     if (!title || !scheduledDate) {
       return res.status(400).json({ error: 'Title and scheduled date are required' });
     }
+
+    // Si es sesión personalizada, maxParticipants debe ser 1
+    const finalMaxParticipants = sessionType === 'personal' ? 1 : (maxParticipants || 30);
+    const finalSessionType = sessionType || 'group';
 
     const session = await MonitoringSession.create({
       title,
@@ -400,7 +411,8 @@ app.post('/api/sessions', auth(true), async (req, res) => {
       monitorId: req.user.id,
       scheduledDate: new Date(scheduledDate),
       duration: duration || 60,
-      maxParticipants: maxParticipants || 30,
+      maxParticipants: finalMaxParticipants,
+      sessionType: finalSessionType,
       room,
       subject,
       notes
@@ -457,6 +469,14 @@ app.put('/api/sessions/:id', auth(true), async (req, res) => {
     const updates = req.body;
     if (updates.scheduledDate) {
       updates.scheduledDate = new Date(updates.scheduledDate);
+    }
+
+    // Si se actualiza el tipo de sesión a personal, asegurar que maxParticipants sea 1
+    if (updates.sessionType === 'personal') {
+      updates.maxParticipants = 1;
+    } else if (updates.sessionType === 'group' && !updates.maxParticipants) {
+      // Si cambia a grupal y no se especifica maxParticipants, usar el valor por defecto
+      updates.maxParticipants = updates.maxParticipants || 30;
     }
 
     const updatedSession = await MonitoringSession.findByIdAndUpdate(
